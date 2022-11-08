@@ -17,9 +17,17 @@ namespace ToDoAPI.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetToDo()
+        public async Task<IActionResult> GetToDo([FromQuery] PaginationFilter filter)
         {
-            return Ok(await dbContext.Todos.ToListAsync());
+            var validFilter = new PaginationFilter(filter.PageNumber, filter.PageSize);
+            var pagedData = await dbContext.Todos
+                .Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
+                .Take(validFilter.PageSize)
+                .ToListAsync();
+            var totalRecords = await dbContext.Todos.CountAsync();
+            return Ok(new PagedResponse<List<ToDo>>(pagedData, validFilter.PageNumber, validFilter.PageSize));
+
+           // return Ok(await dbContext.Todos.ToListAsync());
 
         }
 
@@ -34,7 +42,7 @@ namespace ToDoAPI.Controllers
                 return NotFound("Invalid Id!");
             }
 
-            return Ok(todo);
+            return Ok(new Response<ToDo>(todo));
         }
 
         [HttpPost]
